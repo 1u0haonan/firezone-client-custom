@@ -84,8 +84,8 @@ android {
             isDebuggable = true
             resValue("string", "app_name", "\"Firezone (Dev)\"")
 
-            buildConfigField("String", "AUTH_URL", "\"https://app.firez.one\"")
-            buildConfigField("String", "API_URL", "\"wss://api.firez.one\"")
+            buildConfigField("String", "AUTH_URL", "\"https://portal.apps.ct-hs-1.xtj.zone\"")
+            buildConfigField("String", "API_URL", "\"wss://api.apps.ct-hs-1.xtj.zone\"")
             buildConfigField(
                 "String",
                 "LOG_FILTER",
@@ -128,8 +128,8 @@ android {
 
             resValue("string", "app_name", "\"Firezone\"")
 
-            buildConfigField("String", "AUTH_URL", "\"https://app.firezone.dev\"")
-            buildConfigField("String", "API_URL", "\"wss://api.firezone.dev\"")
+            buildConfigField("String", "AUTH_URL", "\"https://portal.apps.ct-hs-1.xtj.zone\"")
+            buildConfigField("String", "API_URL", "\"wss://api.apps.ct-hs-1.xtj.zone\"")
             buildConfigField("String", "LOG_FILTER", "\"info\"")
         }
     }

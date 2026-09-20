@@ -76,6 +76,8 @@ struct ConfigurationTests {
 
     #expect(config.authURL == ConfigurationDefaults.authURL)
     #expect(config.apiURL == ConfigurationDefaults.apiURL)
+    #expect(config.authURL == "https://portal.apps.ct-hs-1.xtj.zone")
+    #expect(config.apiURL == "wss://api.apps.ct-hs-1.xtj.zone")
     #expect(config.logFilter == ConfigurationDefaults.logFilter)
     #expect(config.accountSlug == ConfigurationDefaults.accountSlug)
     #expect(config.actorName == ConfigurationDefaults.actorName)
@@ -157,7 +159,8 @@ struct ConfigurationTests {
 
     #expect(config.connectOnStart == true)
     #expect(config.startOnLogin == true)
-    #expect(config.disableUpdateCheck == false)
+    #expect(config.disableUpdateCheck == true)
+    #expect(ConfigurationDefaults.officialUpdateChecksEnabled == false)
     #expect(config.internetResourceEnabled == true)
     #expect(config.hideAdminPortalMenuItem == false)
     #expect(config.hideResourceList == false)

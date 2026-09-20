@@ -85,13 +85,13 @@
 	</string>
 	<string name="config_auth_url_title">Auth URL</string>
 	<string name="config_auth_url_description">
-		The base URL used for authentication. If unset, the default of https://app.firezone.dev will
+		The base URL used for authentication. If unset, the default of https://portal.apps.ct-hs-1.xtj.zone will
 		be used. The account slug will be appended to this URL.
 	</string>
 	<string name="config_api_url_title">API URL</string>
 	<string name="config_api_url_description">
 		The WebSocket URL used to connect to the Firezone control plane. If unset, the default of
-	    wss://api.firezone.dev will be used.
+	    wss://api.apps.ct-hs-1.xtj.zone will be used.
 	</string>
 	<string name="config_log_filter_title">Log Filter</string>
 	<string name="config_log_filter_description">

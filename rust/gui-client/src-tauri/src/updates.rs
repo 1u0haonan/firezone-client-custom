@@ -8,6 +8,7 @@ use std::{str::FromStr, time::Duration};
 use tokio::sync::mpsc;
 
 const BASE_URL: &str = "https://www.firezone.dev";
+const OFFICIAL_UPDATE_CHECKS_ENABLED: bool = false;
 
 /// GUI-friendly release struct
 ///
@@ -29,6 +30,10 @@ struct ApiReleasesResponse {
 /// The last version we notified about is only kept in memory, so the user
 /// is reminded about a pending update once per GUI session.
 pub async fn checker_task(ctlr_tx: mpsc::Sender<Option<Release>>, debug_mode: bool) -> Result<()> {
+    if !OFFICIAL_UPDATE_CHECKS_ENABLED {
+        return Ok(());
+    }
+
     delete_legacy_version_file().await;
 
     let (current_version, interval_in_seconds) = if debug_mode {
@@ -253,6 +258,18 @@ pub(crate) fn current_version() -> Result<Version> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn custom_build_does_not_check_or_notify() {
+        for debug_mode in [false, true] {
+            let (sender, mut receiver) = mpsc::channel(1);
+            tokio::time::timeout(Duration::from_secs(1), checker_task(sender, debug_mode))
+                .await
+                .expect("Update checker should exit immediately")
+                .expect("Disabling updates should succeed");
+            assert_eq!(receiver.recv().await, None);
+        }
+    }
 
     #[test]
     fn checker_happy_path() {

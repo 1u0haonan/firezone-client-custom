@@ -135,15 +135,15 @@ impl AdvancedSettingsViewModel {
 
 #[cfg(debug_assertions)]
 mod defaults {
-    pub(crate) const AUTH_URL: &str = "https://app.firez.one";
-    pub(crate) const API_URL: &str = "wss://api.firez.one/";
+    pub(crate) const AUTH_URL: &str = "https://portal.apps.ct-hs-1.xtj.zone";
+    pub(crate) const API_URL: &str = "wss://api.apps.ct-hs-1.xtj.zone/";
     pub(crate) const LOG_FILTER: &str = "debug";
 }
 
 #[cfg(not(debug_assertions))]
 mod defaults {
-    pub(crate) const AUTH_URL: &str = "https://app.firezone.dev";
-    pub(crate) const API_URL: &str = "wss://api.firezone.dev/";
+    pub(crate) const AUTH_URL: &str = "https://portal.apps.ct-hs-1.xtj.zone";
+    pub(crate) const API_URL: &str = "wss://api.apps.ct-hs-1.xtj.zone/";
     pub(crate) const LOG_FILTER: &str = "info";
 }
 

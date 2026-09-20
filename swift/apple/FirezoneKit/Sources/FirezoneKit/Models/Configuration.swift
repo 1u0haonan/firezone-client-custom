@@ -17,12 +17,12 @@ import Foundation
 
 public enum ConfigurationDefaults {
   #if DEBUG
-    public static let authURL = "https://app.firez.one"
-    public static let apiURL = "wss://api.firez.one"
+    public static let authURL = "https://portal.apps.ct-hs-1.xtj.zone"
+    public static let apiURL = "wss://api.apps.ct-hs-1.xtj.zone"
     public static let logFilter = "debug"
   #else
-    public static let authURL = "https://app.firezone.dev"
-    public static let apiURL = "wss://api.firezone.dev"
+    public static let authURL = "https://portal.apps.ct-hs-1.xtj.zone"
+    public static let apiURL = "wss://api.apps.ct-hs-1.xtj.zone"
     public static let logFilter = "info"
   #endif
 
@@ -31,7 +31,8 @@ public enum ConfigurationDefaults {
   public static let supportURL = "https://www.firezone.dev/support"
   public static let connectOnStart = false
   public static let startOnLogin = false
-  public static let disableUpdateCheck = false
+  public static let officialUpdateChecksEnabled = false
+  public static let disableUpdateCheck = true
   public static let internetResourceEnabled = false
 }
 

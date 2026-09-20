@@ -1,0 +1,179 @@
+name: Custom self-hosted clients
+run-name: Custom clients - ${{ inputs.platform }}
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Platform to compile (Apple builds are unsigned)
+        type: choice
+        default: macos
+        options:
+          - macos
+          - ios
+          - linux
+          - windows
+          - android
+          - all
+
+permissions:
+  contents: read
+
+concurrency:
+  group: custom-clients-${{ github.ref }}-${{ inputs.platform }}
+  cancel-in-progress: false
+
+env:
+  FIREZONE_NO_TELEMETRY: "true"
+  CARGO_TERM_COLOR: always
+  CARGO_PROFILE_RELEASE_LTO: thin
+
+jobs:
+  apple:
+    if: contains(fromJSON('["macos", "ios", "all"]'), inputs.platform)
+    runs-on: macos-26
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: ${{ inputs.platform == 'all' && fromJSON('["macos", "ios"]') || fromJSON(format('["{0}"]', inputs.platform)) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Select Xcode 26.2
+        run: |
+          test -d /Applications/Xcode_26.2.app
+          sudo xcode-select --switch /Applications/Xcode_26.2.app
+          xcodebuild -version
+      - uses: ./.github/actions/setup-rust-stable
+        with:
+          targets: aarch64-apple-darwin x86_64-apple-darwin aarch64-apple-ios
+      - name: Test Apple configuration
+        if: matrix.platform == 'macos'
+        working-directory: swift/apple/FirezoneKit
+        run: swift test --filter ConfigurationTests
+      - name: Compile unsigned app
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          set -euo pipefail
+          if [ "$PLATFORM" = macos ]; then
+            destination='generic/platform=macOS'
+            sdk=macosx
+          else
+            destination='generic/platform=iOS'
+            sdk=iphoneos
+          fi
+          xcodebuild -project swift/apple/Firezone.xcodeproj \
+            -scheme Firezone -configuration Release \
+            -destination "$destination" -sdk "$sdk" \
+            -derivedDataPath "$RUNNER_TEMP/FirezoneBuild" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY= DEVELOPMENT_TEAM= \
+            ONLY_ACTIVE_ARCH=NO FIREZONE_NO_TELEMETRY=true \
+            build 2>&1 | tee "$RUNNER_TEMP/apple-build.log"
+      - name: Package compilation artifact
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          set -euo pipefail
+          products="$RUNNER_TEMP/FirezoneBuild/Build/Products"
+          if [ "$PLATFORM" = macos ]; then
+            app="$products/Release/Firezone.app"
+          else
+            app="$products/Release-iphoneos/Firezone.app"
+          fi
+          test -d "$app"
+          mkdir -p artifacts
+          ditto -c -k --sequesterRsrc --keepParent "$app" "artifacts/firezone-$PLATFORM-UNSIGNED.zip"
+          cp CUSTOM_CLIENTS.md artifacts/
+          shasum -a 256 artifacts/*.zip > artifacts/SHA256SUMS
+          echo "Unsigned compilation artifact only. VPN extension requires your own Apple signing and provisioning." >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: firezone-${{ matrix.platform }}-UNSIGNED-${{ github.run_number }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: failure()
+        with:
+          name: apple-${{ matrix.platform }}-build-log
+          path: ${{ runner.temp }}/apple-build.log
+          retention-days: 7
+
+  desktop:
+    if: contains(fromJSON('["linux", "windows", "all"]'), inputs.platform)
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: ${{ inputs.platform == 'all' && fromJSON('["linux", "windows"]') || fromJSON(format('["{0}"]', inputs.platform)) }}
+    runs-on: ${{ matrix.platform == 'windows' && 'windows-2022' || 'ubuntu-24.04' }}
+    env:
+      TSLINK_BUILD: "true"
+    defaults:
+      run:
+        working-directory: rust/gui-client
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "24"
+          cache: pnpm
+          cache-dependency-path: rust/gui-client/pnpm-lock.yaml
+      - uses: ./.github/actions/setup-rust-stable
+      - uses: ./.github/actions/setup-tauri-v2
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm vite build
+      - name: Test custom update suppression
+        run: cargo test --locked -p firezone-gui-client custom_build_does_not_check_or_notify
+      - name: Test headless sign-in defaults
+        run: cargo test --locked -p firezone-headless-client sign_in
+      - name: Build GUI packages
+        run: pnpm tauri build
+      - name: Build headless client
+        run: cargo build --locked --release -p firezone-headless-client
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: firezone-${{ matrix.platform }}-x86_64-unsigned-${{ github.run_number }}
+          path: |
+            rust/target/release/bundle/deb/*.deb
+            rust/target/release/bundle/rpm/*.rpm
+            rust/target/release/bundle/msi/*.msi
+            rust/target/release/firezone-headless-client
+            rust/target/release/firezone-headless-client.exe
+            CUSTOM_CLIENTS.md
+          if-no-files-found: error
+          retention-days: 14
+
+  android:
+    if: contains(fromJSON('["android", "all"]'), inputs.platform)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: ./.github/actions/setup-android
+      - name: Install pinned Android SDK and NDK
+        run: sdkmanager "platforms;android-37" "ndk;28.2.13676358"
+      - name: Build debug-signed APK
+        working-directory: kotlin/android
+        run: ./gradlew --no-daemon assembleDebug
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: firezone-android-debug-${{ github.run_number }}
+          path: kotlin/android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14

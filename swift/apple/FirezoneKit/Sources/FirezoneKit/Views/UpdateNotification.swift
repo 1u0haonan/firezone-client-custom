@@ -63,7 +63,9 @@
     }
 
     private func startCheckingForUpdates() {
-      guard timerCancellable == nil else { return }
+      guard ConfigurationDefaults.officialUpdateChecksEnabled, timerCancellable == nil else {
+        return
+      }
 
       // Check immediately
       checkForUpdates()
@@ -77,7 +79,7 @@
     }
 
     private func checkForUpdates() {
-      if configuration.disableUpdateCheck {
+      if !ConfigurationDefaults.officialUpdateChecksEnabled || configuration.disableUpdateCheck {
         return
       }
 

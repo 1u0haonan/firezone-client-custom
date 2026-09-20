@@ -77,7 +77,7 @@ struct Cli {
         long,
         hide = true,
         env = "FIREZONE_API_URL",
-        default_value = "wss://api.firezone.dev/"
+        default_value = "wss://api.apps.ct-hs-1.xtj.zone/"
     )]
     api_url: url::Url,
 
@@ -183,7 +183,7 @@ enum Cmd {
         #[arg(
             long,
             env = "FIREZONE_AUTH_BASE_URL",
-            default_value = "https://app.firezone.dev"
+            default_value = "https://portal.apps.ct-hs-1.xtj.zone"
         )]
         auth_base_url: url::Url,
 
@@ -736,12 +736,13 @@ mod tests {
     #[test]
     fn sign_in_bare() {
         let actual = Cli::try_parse_from(["firezone-headless-client", "sign-in"]).unwrap();
+        assert_eq!(actual.api_url.as_str(), "wss://api.apps.ct-hs-1.xtj.zone/");
         match actual._command {
             Some(Cmd::SignIn {
                 auth_base_url,
                 account_slug,
             }) => {
-                assert_eq!(auth_base_url.as_str(), "https://app.firezone.dev/");
+                assert_eq!(auth_base_url.as_str(), "https://portal.apps.ct-hs-1.xtj.zone/");
                 assert_eq!(account_slug, None);
             }
             _ => panic!("Expected SignIn command"),
