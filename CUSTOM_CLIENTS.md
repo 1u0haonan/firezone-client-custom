@@ -17,7 +17,7 @@
 - Debug 和 Release 均使用上述地址，仍允许显式配置覆盖。
 - macOS 和 Windows/Linux GUI 在代码层禁用官方版本检查，不请求官方 release 接口，也不显示由该检查产生的 “Update available” 提醒；MDM 或调试开关不会重新开启它。
 - Android/iOS 的应用商店更新提示不属于这段应用内版本检查；本流程不会发布至应用商店。
-- 定制构建关闭上游遥测，但仍会与自托管 Portal/API 通信。
+- 工作流设置 `FIREZONE_NO_TELEMETRY=true`，由 GUI、Apple、Android 的上游构建逻辑处理。Headless 的该开关是运行时选项：需要关闭崩溃上报时，启动时传入 `--no-telemetry` 或设置该环境变量；不要将构建环境变量误认为对所有运行时上报的永久禁用。
 
 已安装客户端的保存配置、MDM、命令行参数或环境变量可能覆盖新默认值。升级后请检查实际 URL；不要为切换默认值删除整个系统钥匙串或清空无关配置。
 
@@ -65,3 +65,31 @@
 - 构建后仍需验证：认证跳转域名、OIDC 回调、连接自托管 API、策略实时同步、直连/Relay 和目标资源访问。
 - 回退可安装原官方客户端并重新配置自托管地址；先退出正在运行的定制客户端，注意保存配置与签名兼容性。
 - 默认 URL 修改不会改变服务端或 Gateway/Relay 部署，也不会自动迁移已有用户配置。
+
+## 首次构建验证记录（2026-09-20）
+
+以下五个平台均已完成编译和产物上传。下载入口位于对应运行页面的 Artifacts，需登录 GitHub；产物保留 14 天，到期后可重新手动构建。
+
+| 平台 | 构建记录 / 下载入口 | 实际产物 |
+| --- | --- | --- |
+| macOS | [Run 35503563057](https://github.com/1u0haonan/firezone-client-custom/actions/runs/35503563057) | 未签名通用架构 App ZIP |
+| iOS | [Run 35503410214](https://github.com/1u0haonan/firezone-client-custom/actions/runs/35503410214) | 未签名真机 App ZIP |
+| Linux x86_64 | [Run 35503364201](https://github.com/1u0haonan/firezone-client-custom/actions/runs/35503364201) | DEB、RPM、Headless |
+| Windows x86_64 | [Run 35503365514](https://github.com/1u0haonan/firezone-client-custom/actions/runs/35503365514) | 未签名 MSI、Headless EXE |
+| Android | [Run 35503471922](https://github.com/1u0haonan/firezone-client-custom/actions/runs/35503471922) | Debug 签名 APK |
+
+验证结果：
+
+- macOS：22 项配置及关联测试通过；完整 App 构建成功。下载后通过 ZIP 完整性和 SHA-256 校验，主程序与 Network Extension 均包含 x86_64、arm64 两种架构，主程序内确认包含指定的认证和 API URL。
+- Windows/Linux：官方更新检查禁用测试及 Headless 登录参数测试通过，GUI 和 Headless 构建、上传完成。
+- Android：已修正 SDK 安装包名为官方仓库中的 `platforms;android-37.0`，不降级源码中的 compileSdk。
+- iOS：真机目标编译通过，未执行真机安装测试。
+- 各平台仍未完成本定制包的自托管 VPN 端到端测试。Apple 的签名/授权与 Windows 的 MSIX 签名限制仍然存在，不能仅凭构建成功判断 VPN 可用。
+
+首次 macOS ZIP 的 SHA-256：
+
+```text
+c9fbbd3deef5d0c7dc6cf1a5e43e586965bc827598597e23c2f9fb5529f4714c
+```
+
+各平台在不同提交上完成构建，期间修改仅涉及本平台测试、Apple 更新偏好一致性以及 Android SDK 安装步骤；精确源码提交见各运行页面的 commit。后续修改请基于当前定制分支重新构建所需平台，不要将旧产物误当成最新源码产物。
