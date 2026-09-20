@@ -159,7 +159,9 @@ public class Configuration: ObservableObject {
 
   var hideAdminPortalMenuItem: Bool { managedBool(Keys.hideAdminPortalMenuItem) }
   var hideResourceList: Bool { managedBool(Keys.hideResourceList) }
-  var disableUpdateCheck: Bool { managedBool(Keys.disableUpdateCheck) }
+  var disableUpdateCheck: Bool {
+    !ConfigurationDefaults.officialUpdateChecksEnabled || managedBool(Keys.disableUpdateCheck)
+  }
   var supportURL: String {
     defaults.string(forKey: Keys.supportURL) ?? ConfigurationDefaults.supportURL
   }
